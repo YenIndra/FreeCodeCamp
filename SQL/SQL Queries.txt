@@ -15,4 +15,71 @@ LEFT OUTER JOIN page_likes pl on p.page_id = pl.page_id
 WHERE pl.page_id IS NULL
 ORDER BY p.page_id;
 
-#3.
+#3. Write a query to compare the viewership on laptops versus mobile devices.Output the total viewership for laptop and mobile devices in the format of "laptop_views" and "mobile_views".
+
+SELECT
+  COUNT(CASE WHEN device_type = 'laptop' THEN 1 ELSE NULL END) AS laptop_views,
+  COUNT(CASE WHEN device_type IN ('tablet','phone') THEN 1 ELSE NULL END) as mobile_views
+FROM viewership;
+
+#4. cummulative SUM. Output the transaction date, product type, and the cumulative number of quantities purchased (conveniently abbreviated as cum_purchased).
+
+select order_date,product_type,
+sum(quantity) OVER(PARTITION BY product_type ORDER BY order_date) as cum_purchased
+from total_trans
+ORDER BY 1
+;
+
+#5. Display the IDs of these 2 users along with the total number of messages they sent. Output the results in descending count of the messages.
+
+SELECT sender_id,
+COUNT(CASE WHEN EXTRACT(MONTH FROM sent_date) = '8' AND
+     EXTRACT(YEAR FROM sent_date) = '2022' THEN 1 ELSE NULL END) AS message_count
+FROM messages
+GROUP BY sender_id
+ORDER BY 2 DESC 
+LIMIT 2;
+      OR       
+      
+WITH august_messages 
+AS (
+SELECT 
+  sender_id,
+  COUNT(message_id) AS message_count
+FROM messages
+WHERE EXTRACT(MONTH FROM sent_date) = '8'
+  AND EXTRACT(YEAR FROM sent_date) = '2022'
+GROUP BY sender_id)
+
+SELECT sender_id, message_count
+FROM august_messages
+ORDER BY message_count DESC
+LIMIT 2;
+
+#6.  Write a query to obtain the user IDs and number of products purchased by the top 3 customers; these customers must have spent at least $1,000 in total.
+
+SELECT 
+  user_id, 
+  COUNT(product_id) AS product_num 
+FROM user_transactions 
+GROUP BY user_id 
+HAVING SUM(spend) >= 1000 
+ORDER BY product_num DESC, SUM(spend) DESC
+LIMIT 3;
+
+#7. Write a query to obtain a histogram of tweets posted per user in 2022. Output the tweet count per user as the bucket, and then the number of Twitter users who fall into that bucket.
+
+ with data as(SELECT 
+    user_id, 
+    COUNT(tweet_id) AS tweets_num 
+  FROM 
+    tweets 
+  WHERE 
+    tweet_date BETWEEN '2022-01-01' 
+    AND '2022-12-31' 
+  GROUP BY 
+    user_id)
+SELECT tweets_num AS tweet_bucket, 
+  COUNT(user_id) AS users_num 
+FROM data
+GROUP BY tweets_num;
