@@ -1,0 +1,18 @@
+#1.Write a query to list the top three cities that have the most completed trade orders in descending order. Output the city and number of orders.
+ 
+SELECT u.city, COUNT(t.order_id) as total_orders
+FROM trades t 
+Join users u on t.user_id = u.user_id
+where t.status = 'Completed'
+GROUP BY u.city
+ORDER BY total_orders DESC
+LIMIT 3;
+
+#2. Write a query to return the page IDs of all the Facebook pages that don't have any likes. The output should be in ascending order.
+
+SELECT p.page_id FROM pages p
+LEFT OUTER JOIN page_likes pl on p.page_id = pl.page_id
+WHERE pl.page_id IS NULL
+ORDER BY p.page_id;
+
+#3.
