@@ -83,3 +83,92 @@ SELECT tweets_num AS tweet_bucket,
   COUNT(user_id) AS users_num 
 FROM data
 GROUP BY tweets_num;
+
+#8.  Write a query to get the click-through rate percentage (CTR %) per app in 2022. Output the results in percentage rounded to 2 decimal places.
+
+SELECT app_id, ROUND(100.0 * 
+SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END)
+/ 
+SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END)
+,2) as ctr 
+from events
+WHERE timestamp >= '2022-01-01' AND timestamp < '2023-01-01'
+GROUP BY app_id;
+
+#9. Write a query to get the number of companies that have posted duplicate job listings (two jobs at the same company with the same title and description).
+
+WITH job_listings_rank 
+AS (
+  SELECT
+    ROW_NUMBER() OVER (
+      PARTITION BY company_id, title, description 
+    ) AS ranking, 
+    company_id, 
+    title, 
+    description 
+  FROM job_listings
+)
+
+SELECT COUNT(
+CASE WHEN ranking >= 2 Then 1 ELSE NULL END 
+) AS duplicate_companies
+FROM job_listings_rank;
+		OR
+
+WITH jobs_grouped 
+AS (
+  SELECT 
+    company_id, 
+    title, 
+    description, 
+    COUNT(job_id) AS job_count
+  FROM job_listings
+  GROUP BY 
+    company_id, 
+    title, 
+    description)
+
+SELECT 
+  COUNT(DISTINCT company_id) AS duplicate_companies
+FROM jobs_grouped
+WHERE job_count > 1;
+
+#10.  Write a query to obtain the number of users who purchased the same product on two or more different days. Output the number of unique users.
+
+WITH ranking 
+AS (
+  SELECT 
+    user_id, 
+    RANK() OVER (
+      PARTITION BY user_id, product_id 
+      ORDER BY DATE(purchase_date) ASC) AS purchase_no 
+  FROM purchases) 
+
+SELECT COUNT(DISTINCT user_id) AS users_num 
+FROM ranking 
+WHERE purchase_no = 2;
+
+#11. Write a query to obtain the third transaction of every user. Output the user id, spend and transaction date.
+
+with data AS(
+SELECT *,
+RANK() OVER(PARTITION BY user_id ORDER BY transaction_date) AS ranking 
+FROM transactions
+)
+Select user_id, spend, transaction_date from data WHERE ranking = 3 
+;
+
+#12.  write a query to get the average stars for each product every month.The output should include the month, product_id, and average star rating.
+
+SELECT 
+  mth,
+  product_id,
+  ROUND(AVG(stars), 2) AS avg_stars
+FROM (
+  SELECT 
+    EXTRACT(MONTH FROM submit_date) AS mth,
+    product_id,
+    stars
+  FROM reviews) AS rev_star
+GROUP BY mth, product_id
+ORDER BY mth, product_id;
